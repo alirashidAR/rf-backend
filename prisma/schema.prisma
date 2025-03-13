@@ -93,7 +93,6 @@ model Application {
 enum Role {
   ADMIN
   FACULTY
-  USER
 }
 
 enum ResearchStatus {
