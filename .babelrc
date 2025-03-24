@@ -1,0 +1,5 @@
+// Jest to handle ES modules properly.
+{
+    "presets": ["@babel/preset-env"]
+}
+  
