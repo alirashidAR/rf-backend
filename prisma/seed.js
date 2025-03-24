@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import prisma from "./prismaClient.js";
 
 async function seed() {
@@ -15,6 +17,12 @@ async function seed() {
                     name: 'Faculty Member',
                     role: 'FACULTY',
                     firebaseUid: 'faculty-uid'
+                },
+                {
+                    email: 'user@example.com',
+                    name: 'User',
+                    role: 'USER',
+                    firebaseUid: 'user-uid'
                 }
             ]
         });

@@ -10,7 +10,7 @@ const verifyRole = (role) => (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (decoded.role !== role) {
+        if (!roles.includes(decoded.role)) {
             return res.status(403).json({ message: "Forbidden: Invalid role" });
         }
         req.user = decoded; 
