@@ -1,17 +1,5 @@
-import { login, googleLogin } from "../../src/controllers/authController.js";
-import prisma from "../../prisma/prismaClient.js";
-import jwt from "jsonwebtoken";
-
-jest.mock("../../prisma/prismaClient", () => ({
-  user: {
-    findUnique: jest.fn(),
-    create: jest.fn(),
-  },
-}));
-
-jest.mock("jsonwebtoken", () => ({
-  sign: jest.fn(),
-}));
+import { login } from "../../src/controllers/authController.js";
+import { prisma, jwt } from "../setup.js";
 
 describe("Auth Controller", () => {
   afterEach(() => {
@@ -43,7 +31,7 @@ describe("Auth Controller", () => {
     it("should return 200 and a token on success", async () => {
       prisma.user.findUnique.mockResolvedValue({ email: "test@vit.ac.in", password: "123456" });
       jwt.sign.mockReturnValue("mocked_token");
-      
+
       const req = { body: { email: "test@vit.ac.in", password: "123456" } };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
