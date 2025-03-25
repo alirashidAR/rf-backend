@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const verifyRole = (role) => (req, res, next) => {
+const verifyRole = (allowedRoles) => (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ message: "Unauthorized: Missing or invalid token" });
@@ -10,15 +10,17 @@ const verifyRole = (role) => (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!roles.includes(decoded.role)) {
-            return res.status(403).json({ message: "Forbidden: Invalid role" });
+        
+        if (!allowedRoles.includes(decoded.role)) {  
+            return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
         }
-        req.user = decoded; 
+
+        req.user = decoded;
         next();
     } catch (err) {
-        return res.status(403).json({ message: "Forbidden: Invalid token" });
+        return res.status(403).json({ message: "Forbidden: Invalid or expired token" });
     }
-}
+};
 
 
 export default verifyRole;

@@ -1,5 +1,9 @@
 import prisma from "../prisma/prismaClient.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { configDotenv } from "dotenv";
+
+configDotenv();
 
 jest.mock("../prisma/prismaClient", () => ({
   user: {
@@ -8,8 +12,10 @@ jest.mock("../prisma/prismaClient", () => ({
   },
 }));
 
-jest.mock("jsonwebtoken", () => ({
-  sign: jest.fn(),
-}));
+jest.mock("jsonwebtoken");
+jest.mock("bcrypt");
 
-export { prisma, jwt };
+bcrypt.compare = jest.fn();  
+jwt.sign = jest.fn();   
+
+export { prisma, jwt, bcrypt };

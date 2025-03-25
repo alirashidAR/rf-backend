@@ -1,5 +1,6 @@
 import prisma from '../../prisma/prismaClient.js';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 export const login = async (req, res) => {
     const { email, password } = req.body;
@@ -10,11 +11,16 @@ export const login = async (req, res) => {
     
     const user = await prisma.user.findUnique({
         where: {
-        email,
+            email,
         },
     });
     
-    if (!user || user.password !== password) {
+    if (!user) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
         return res.status(401).json({ message: 'Invalid email or password' });
     }
     
