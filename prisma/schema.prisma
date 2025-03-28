@@ -18,6 +18,8 @@ model User {
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   applications         Application[]
+  bio                  String?
+  researchInterests     String[]
   faculty              Faculty?
   projectsParticipated ProjectParticipants[]
   favorites            Project[]             @relation("UserFavorites")
@@ -112,4 +114,8 @@ enum ApplicationStatus {
   PENDING
   ACCEPTED
   REJECTED
+}
+
+enum crdb_internal_region {
+  aws_ap_south_1 @map("aws-ap-south-1")
 }

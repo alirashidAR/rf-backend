@@ -28,7 +28,7 @@ async function seed() {
                     email: 'al@example.com',
                     name: 'User',
                     role: 'USER',
-                    firebaseUid: 'user-uid'
+                    firebaseUid: 'user-ud'
                 }
             ]
         });
