@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 export const register = async (req, res) => {
-    const {email ,password } = req.body;
+    const {email ,password,name } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
@@ -30,6 +30,8 @@ export const register = async (req, res) => {
             email,
             password: hashedPassword,
             role,
+            name:name,
+            firebaseUid: "213123213",
         },
     });
 
@@ -59,7 +61,7 @@ export const login = async (req, res) => {
         return res.status(401).json({ message: 'Invalid email or password' });
     }
     
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '7h' });
+    const token = jwt.sign({ id:user.id, email, role:user.role }, process.env.JWT_SECRET, { expiresIn: '7h' });
     
     res.status(200).json({ jwt: token });
 };

@@ -10,9 +10,10 @@ datasource db {
 model User {
   id                   String                @id @default(uuid())
   email                String                @unique
+  password             String?                 
   name                 String
   role                 Role                  @default(USER)
-  firebaseUid          String                @unique
+  firebaseUid          String?                @unique
   profilePicUrl        String?
   department           String?
   createdAt            DateTime              @default(now())
