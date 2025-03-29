@@ -31,7 +31,6 @@ export const register = async (req, res) => {
             password: hashedPassword,
             role,
             name:name,
-            firebaseUid: "213123213",
         },
     });
 
