@@ -139,23 +139,22 @@ export const getAllProjects = async (req, res) => {
 // Search projects
 export const searchProjects = async (req, res) => {
   try {
-    const { query, department, status, type } = req.query;
-    
-    const where = {};
-    
-    // Text search on title, description, or keywords
-    if (query) {
-      where.OR = [
+    const { query, department, status, type, page = 1, pageSize = 10 } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ message: 'Keyword (query) is required' });
+    }
+
+    const where = {
+      OR: [
         { title: { contains: query, mode: 'insensitive' } },
         { description: { contains: query, mode: 'insensitive' } },
         { keywords: { has: query } }
-      ];
-    }
-    
+      ]
+    };
+
     if (status) where.status = status;
     if (type) where.type = type;
-    
-    // Filter by department (faculty's department)
     if (department) {
       where.faculty = {
         user: {
@@ -163,25 +162,24 @@ export const searchProjects = async (req, res) => {
         }
       };
     }
-    
+
     const projects = await prisma.project.findMany({
       where,
       include: {
         faculty: {
           include: {
             user: {
-              select: {
-                name: true,
-                email: true,
-                department: true
-              }
+              select: { name: true, email: true, department: true }
             }
           }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: parseInt(pageSize)
     });
-    
-    res.json(projects);
+
+    res.json({ projects, currentPage: parseInt(page), pageSize: parseInt(pageSize) });
   } catch (error) {
     console.error('Error searching projects:', error);
     res.status(500).json({ message: 'Failed to search projects', error: error.message });

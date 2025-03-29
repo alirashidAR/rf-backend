@@ -4,6 +4,7 @@ import authRoutes from './routes/authRoutes.js';
 import statusRoutes from './routes/serverStatus.js';
 import projectRoutes from './routes/projectRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use('/auth', authRoutes);
 app.use('/',statusRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api', searchRoutes);
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
