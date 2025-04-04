@@ -13,7 +13,12 @@ import {
     getFacultyProjects, 
     addToFavorites, 
     removeFromFavorites, 
-    getProjectParticipants 
+    getProjectParticipants,
+    removeParticipant,
+    getRecentProjects,
+    getCurrentProjects,
+    getCurrentFacultyProjects,
+    getTrendingProjects
   } from '../controllers/projectController.js';
 
 const router = express.Router();
@@ -29,7 +34,11 @@ router.get('/search', verifyJwt, searchProjects);
 router.get('/:id', verifyJwt, getProjectById);
 
 // Faculty dashboard view of projects
-router.get('/faculty/dashboard', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getFacultyProjects);
+router.get('/faculty', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getFacultyProjects);
+router.get('/recent', verifyJwt, getRecentProjects);
+router.get('/current', verifyJwt, verifyRole([Role.USER, Role.ADMIN]), getCurrentProjects);
+router.get('/faculty/current', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getCurrentFacultyProjects);
+router.get('/trending', verifyJwt, getTrendingProjects);
 
 // Add/remove project from favorites
 router.post('/:id/favorite', verifyJwt, addToFavorites);
@@ -37,5 +46,6 @@ router.delete('/:id/favorite', verifyJwt, removeFromFavorites);
 
 // Get project participants
 router.get('/:id/participants', verifyJwt, getProjectParticipants);
+router.delete('/:id/participants/:userId', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), removeParticipant);
 
 export default router;

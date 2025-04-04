@@ -3,8 +3,17 @@ import prisma from '../../prisma/prismaClient.js';
 // Create a new research project
 export const createProject = async (req, res) => {
   try {
-    const { title, description, keywords, type, startDate, endDate } = req.body;
-    
+    const { title, description, keywords, type, status, startDate, endDate, applicationDeadline, positionsAvailable,  location, requirements} = req.body;
+ 
+    const validStatuses = ["ONGOING", "PENDING", "COMPLETED"];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid project status" });
+    }
+    const validLocations = ["REMOTE", "ON_CAMPUS"];
+    if (location && !validLocations.includes(location)) {
+      return res.status(400).json({ message: "Invalid location type" });
+    }
+
     // Get faculty ID based on the logged-in user
     const faculty = await prisma.faculty.findUnique({
       where: { userId: req.user.id }
@@ -20,8 +29,13 @@ export const createProject = async (req, res) => {
         description,
         keywords,
         type,
+        status: status || 'PENDING',
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        applicationDeadline : applicationDeadline ? new Date(applicationDeadline) : null,
+        positionsAvailable :  positionsAvailable || 0,
+        location : location || 'ON_CAMPUS',
+        requirements : requirements || [],
         facultyId: faculty.id
       }
     });
@@ -98,6 +112,60 @@ export const deleteProject = async (req, res) => {
   } catch (error) {
     console.error('Error deleting project:', error);
     res.status(500).json({ message: 'Failed to delete project', error: error.message });
+  }
+};
+
+//Reove a student from the project
+export const removeParticipant = async (req, res) => {
+  try {
+    const { projectId, studentId } = req.params;
+
+    // Verify the faculty making the request
+    const faculty = await prisma.faculty.findUnique({
+      where: { userId: req.user.id }
+    });
+
+    if (!faculty) {
+      return res.status(403).json({ message: "Faculty profile not found" });
+    }
+
+    // Check if the project exists and belongs to the faculty
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project || project.facultyId !== faculty.id) {
+      return res.status(403).json({ message: "You do not have permission to modify this project" });
+    }
+
+    // Check if the student is actually a participant
+    const participant = await prisma.projectParticipants.findUnique({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId: studentId
+        }
+      }
+    });
+
+    if (!participant) {
+      return res.status(404).json({ message: "Student is not a participant in this project" });
+    }
+
+    // Remove the student from the project
+    await prisma.projectParticipants.delete({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId: studentId
+        }
+      }
+    });
+
+    res.json({ message: "Student removed from the project successfully" });
+  } catch (error) {
+    console.error("Error removing participant:", error);
+    res.status(500).json({ message: "Failed to remove student", error: error.message });
   }
 };
 
@@ -370,3 +438,120 @@ export const getProjectParticipants = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch participants', error: error.message });
   }
 };
+
+export const getRecentProjects = async (req, res) => {
+  try {
+    const recentProjects = await prisma.project.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10 // Fetch latest 10 projects
+    });
+
+    res.json({ projects: recentProjects });
+  } catch (error) {
+    console.error("Error fetching recent projects:", error);
+    res.status(500).json({ message: "Failed to fetch recent projects" });
+  }
+};
+
+export const getCurrentProjects = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user's applied & accepted projects
+    const applications = await prisma.application.findMany({
+      where: {
+        userId,
+        status: { in: ["PENDING", "ACCEPTED", "REJECTED"] } // Show only active applications
+      },
+      select: {
+        project: {
+          select: {
+            id,
+            title,
+            updatedAt,
+            status
+          }
+        },
+        status
+      }
+    });
+
+    // Remove projects with non-pending status after 2 days
+    const currentDate = new Date();
+    const filteredProjects = applications.filter(app => {
+      if (app.status !== "PENDING") {
+        const updatedDate = new Date(app.project.updatedAt);
+        const diffInDays = (currentDate - updatedDate) / (1000 * 60 * 60 * 24);
+        return diffInDays <= 2; // Keep if updated within last 2 days
+      }
+      return true;
+    });
+
+    res.json({ projects: filteredProjects });
+  } catch (error) {
+    console.error("Error fetching current projects:", error);
+    res.status(500).json({ message: "Failed to fetch current projects" });
+  }
+};
+
+export const getCurrentFacultyProjects = async (req, res) => {
+  try {
+    const faculty = await prisma.faculty.findUnique({
+      where: { userId: req.user.id }
+    });
+
+    if (!faculty) {
+      return res.status(403).json({ message: "Faculty profile not found" });
+    }
+
+    const facultyProjects = await prisma.project.findMany({
+      where: {
+        facultyId: faculty.id
+      },
+      select: {
+        id: true,
+        title: true,
+        updatedAt: true,
+        status: true,
+        applications: {
+          where: { status: "PENDING" },
+          select: { id: true }
+        }
+      }
+    });
+
+    // Format the response to include pending application count
+    const formattedProjects = facultyProjects.map(project => ({
+      id: project.id,
+      title: project.title,
+      updatedAt: project.updatedAt,
+      status: project.status,
+      pendingApplications: project.applications.length // Count of pending applications
+    }));
+
+    res.json({ projects: formattedProjects });
+  } catch (error) {
+    console.error("Error fetching faculty projects:", error);
+    res.status(500).json({ message: "Failed to fetch faculty projects" });
+  }
+};
+
+export const getTrendingProjects = async (req, res) => {
+  try {
+    const trendingProjects = await prisma.project.findMany({
+      orderBy: {
+        applications: { _count: "desc" } // Sort by highest applications
+      },
+      take: 10, // Limit to top 10 projects
+      include: {
+        applications: true // Include applications count
+      }
+    });
+
+    res.json({ projects: trendingProjects });
+  } catch (error) {
+    console.error("Error fetching trending projects:", error);
+    res.status(500).json({ message: "Failed to fetch trending projects" });
+  }
+};
+
