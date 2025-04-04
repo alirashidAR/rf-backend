@@ -60,7 +60,7 @@ export const login = async (req, res) => {
         return res.status(401).json({ message: 'Invalid email or password' });
     }
     
-    const token = jwt.sign({ id:user.id, email, role:user.role }, process.env.JWT_SECRET, { expiresIn: '7h' });
+    const token = jwt.sign({id:user.id, email, role:user.role, name:user.name }, process.env.JWT_SECRET, { expiresIn: '7h' });
     
     res.status(200).json({ jwt: token });
 };
@@ -91,7 +91,7 @@ export const googleLogin = async (req, res) => {
         );
     }
 
-    const token = jwt.sign({ email, role, id: user.id }, process.env.JWT_SECRET, { expiresIn: '7h' });
+    const token = jwt.sign({ email, role, id: user.id, name:user.name }, process.env.JWT_SECRET, { expiresIn: '7h' });
 
     res.status(200).json({ jwt:token });
 };
