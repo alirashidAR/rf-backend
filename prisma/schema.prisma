@@ -57,21 +57,25 @@ model Publication {
 }
 
 model Project {
-  id           String                @id @default(uuid())
-  title        String
-  description  String
-  keywords     String[]
-  facultyId    String
-  type         ProjectType
-  startDate    DateTime?
-  endDate      DateTime?
-  status       ResearchStatus        @default(ONGOING)
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
-  applications Application[]
-  faculty      Faculty               @relation(fields: [facultyId], references: [id])
-  participants ProjectParticipants[]
-  favorited    User[]                @relation("UserFavorites")
+  id                  String         @id @default(uuid())
+  title               String
+  description         String
+  keywords           String[]
+  facultyId           String
+  type               ProjectType
+  startDate          DateTime?
+  endDate            DateTime?
+  status             ProjectStatus   @default(PENDING)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  applicationDeadline DateTime?
+  positionsAvailable Int             @default(0)
+  location           Location    @default(ON_CAMPUS)  // Now using the enum
+  requirements       String[]
+  applications       Application[]
+  faculty            Faculty         @relation(fields: [facultyId], references: [id])
+  participants       ProjectParticipants[]
+  favorited          User[]          @relation("UserFavorites")
 }
 
 model ProjectParticipants {
@@ -104,6 +108,17 @@ enum ResearchStatus {
   ONGOING
   COMPLETED
   PUBLISHED
+}
+
+enum Location {
+  REMOTE
+  ON_CAMPUS
+}
+
+enum ProjectStatus {
+  ONGOING
+  PENDING
+  COMPLETED
 }
 
 enum ProjectType {
