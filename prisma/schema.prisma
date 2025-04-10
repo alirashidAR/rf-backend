@@ -10,17 +10,17 @@ datasource db {
 model User {
   id                   String                @id @default(uuid())
   email                String                @unique
-  password             String?                 
   name                 String
   role                 Role                  @default(USER)
-  firebaseUid          String?                @unique
+  firebaseUid          String?               @unique
   profilePicUrl        String?
   department           String?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
-  applications         Application[]
   bio                  String?
-  researchInterests     String[]
+  researchInterests    String[]
+  password             String?
+  applications         Application[]
   faculty              Faculty?
   projectsParticipated ProjectParticipants[]
   favorites            Project[]             @relation("UserFavorites")
@@ -34,6 +34,8 @@ model Faculty {
   bio            String
   researchAreas  String[]
   officeHours    String?
+  location       String?
+  phone          String?
   contactInfo    String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -57,25 +59,25 @@ model Publication {
 }
 
 model Project {
-  id                  String         @id @default(uuid())
+  id                  String                @id @default(uuid())
   title               String
   description         String
-  keywords           String[]
+  keywords            String[]
   facultyId           String
-  type               ProjectType
-  startDate          DateTime?
-  endDate            DateTime?
-  status             ProjectStatus   @default(PENDING)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  type                ProjectType
+  startDate           DateTime?
+  endDate             DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
   applicationDeadline DateTime?
-  positionsAvailable Int             @default(0)
-  location           Location    @default(ON_CAMPUS)  // Now using the enum
-  requirements       String[]
-  applications       Application[]
-  faculty            Faculty         @relation(fields: [facultyId], references: [id])
-  participants       ProjectParticipants[]
-  favorited          User[]          @relation("UserFavorites")
+  location            Location              @default(ON_CAMPUS)
+  positionsAvailable  Int                   @default(0)
+  requirements        String[]
+  status              ProjectStatus         @default(PENDING)
+  applications        Application[]
+  faculty             Faculty               @relation(fields: [facultyId], references: [id])
+  participants        ProjectParticipants[]
+  favorited           User[]                @relation("UserFavorites")
 }
 
 model ProjectParticipants {
