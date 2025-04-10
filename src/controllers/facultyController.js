@@ -28,3 +28,28 @@ export const getFacultyDetails = async (req,res) =>{
         res.status(404).json({ message: "Faculty not found" });
     }
 }
+
+export const updateDetails = async (req, res) => {
+    const id = req.params.id;
+    const { bio, researchAreas, contactInfo, title, userId,phone,location } = req.body;
+
+    try {
+        const updatedFaculty = await prisma.faculty.update({
+            where: { id },
+            data: {
+                bio,
+                researchAreas,
+                contactInfo,
+                title,
+                userId,
+                phone,
+                location,
+            },
+        });
+
+        res.status(200).json(updatedFaculty);
+    } catch (error) {
+        console.error("Error updating faculty details:", error);
+        res.status(500).json({ message: "Error updating faculty details" });
+    }
+};
