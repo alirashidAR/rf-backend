@@ -3,8 +3,8 @@ import prisma from '../../prisma/prismaClient.js';
 // Create a new research project
 export const createProject = async (req, res) => {
   try {
-    const { title, description, keywords, type, status, startDate, endDate, applicationDeadline, positionsAvailable,  location, requirements} = req.body;
- 
+    const { title, description, keywords, type, status, startDate, endDate, applicationDeadline, positionsAvailable, location, requirements } = req.body;
+
     const validStatuses = ["ONGOING", "PENDING", "COMPLETED"];
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid project status" });
@@ -14,15 +14,13 @@ export const createProject = async (req, res) => {
       return res.status(400).json({ message: "Invalid location type" });
     }
 
-    // Get faculty ID based on the logged-in user
-    const faculty = await prisma.faculty.findUnique({
-      where: { userId: req.user.id }
-    });
-    
-    if (!faculty) {
-      return res.status(403).json({ message: 'Faculty profile not found' });
+    // Get faculty ID from token
+    const facultyId = req.user.facultyId;
+
+    if (!facultyId) {
+      return res.status(403).json({ message: 'Faculty ID not found in token' });
     }
-    
+
     const project = await prisma.project.create({
       data: {
         title,
@@ -36,10 +34,10 @@ export const createProject = async (req, res) => {
         positionsAvailable :  positionsAvailable || 0,
         location : location || 'ON_CAMPUS',
         requirements : requirements || [],
-        facultyId: faculty.id
+        facultyId: facultyId
       }
     });
-    
+
     res.status(201).json({ message: 'Project created successfully', project });
   } catch (error) {
     console.error('Error creating project:', error);
@@ -51,18 +49,20 @@ export const createProject = async (req, res) => {
 export const updateProject = async (req, res) => {
   try {
     const projectId = req.params.id;
-    const { title, description, keywords, type, startDate, endDate, status } = req.body;
+    const { title, description, keywords, type, status, startDate, endDate, applicationDeadline, positionsAvailable, location, requirements } = req.body;
     
     // Verify project belongs to the faculty
-    const faculty = await prisma.faculty.findUnique({
-      where: { userId: req.user.id }
-    });
+    const facultyId = req.user.facultyId;
     
     const project = await prisma.project.findUnique({
       where: { id: projectId }
     });
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
     
-    if (!project || project.facultyId !== faculty.id) {
+    if (project.facultyId !== facultyId) {
       return res.status(403).json({ message: 'You do not have permission to update this project' });
     }
     
@@ -73,9 +73,14 @@ export const updateProject = async (req, res) => {
         description,
         keywords,
         type,
-        startDate: startDate ? new Date(startDate) : project.startDate,
-        endDate: endDate ? new Date(endDate) : project.endDate,
-        status: status || project.status
+        status: status || 'PENDING',
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        applicationDeadline : applicationDeadline ? new Date(applicationDeadline) : null,
+        positionsAvailable :  positionsAvailable || 0,
+        location : location || 'ON_CAMPUS',
+        requirements : requirements || [],
+        facultyId: facultyId
       }
     });
     
@@ -92,15 +97,13 @@ export const deleteProject = async (req, res) => {
     const projectId = req.params.id;
     
     // Verify project belongs to the faculty
-    const faculty = await prisma.faculty.findUnique({
-      where: { userId: req.user.id }
-    });
+    const facultyId = req.user.facultyId;
     
     const project = await prisma.project.findUnique({
       where: { id: projectId }
     });
     
-    if (!project || project.facultyId !== faculty.id) {
+    if (!project || project.facultyId !== facultyId) {
       return res.status(403).json({ message: 'You do not have permission to delete this project' });
     }
     
@@ -121,11 +124,9 @@ export const removeParticipant = async (req, res) => {
     const { projectId, studentId } = req.params;
 
     // Verify the faculty making the request
-    const faculty = await prisma.faculty.findUnique({
-      where: { userId: req.user.id }
-    });
+    const facultyId = req.user.facultyId;
 
-    if (!faculty) {
+    if (!facultyId) {
       return res.status(403).json({ message: "Faculty profile not found" });
     }
 
@@ -134,7 +135,7 @@ export const removeParticipant = async (req, res) => {
       where: { id: projectId }
     });
 
-    if (!project || project.facultyId !== faculty.id) {
+    if (!project || project.facultyId !== facultyId) {
       return res.status(403).json({ message: "You do not have permission to modify this project" });
     }
 
@@ -172,7 +173,11 @@ export const removeParticipant = async (req, res) => {
 // Get all projects (with optional filters)
 export const getAllProjects = async (req, res) => {
   try {
-    const { status, type, facultyId } = req.query;
+    const { status, type } = req.query;
+    const facultyId = req.user.facultyId; // Get faculty ID from token
+    if (!facultyId) {
+      return res.status(403).json({ message: 'Faculty ID not found in token' });
+    }
     
     const where = {};
     if (status) where.status = status;
@@ -335,16 +340,14 @@ export const getProjectById = async (req, res) => {
 // Get faculty's projects for dashboard
 export const getFacultyProjects = async (req, res) => {
   try {
-    const faculty = await prisma.faculty.findUnique({
-      where: { userId: req.user.id }
-    });
+    const facultyId = req.user.facultyId;
     
-    if (!faculty) {
+    if (!facultyId) {
       return res.status(403).json({ message: 'Faculty profile not found' });
     }
     
     const projects = await prisma.project.findMany({
-      where: { facultyId: faculty.id },
+      where: { facultyId: facultyId },
       include: {
         _count: {
           select: {
@@ -496,17 +499,15 @@ export const getCurrentProjects = async (req, res) => {
 
 export const getCurrentFacultyProjects = async (req, res) => {
   try {
-    const faculty = await prisma.faculty.findUnique({
-      where: { userId: req.user.id }
-    });
+    const facultyId = req.user.facultyId;
 
-    if (!faculty) {
+    if (!facultyId) {
       return res.status(403).json({ message: "Faculty profile not found" });
     }
 
     const facultyProjects = await prisma.project.findMany({
       where: {
-        facultyId: faculty.id
+        facultyId: facultyId
       },
       select: {
         id: true,
