@@ -19,6 +19,9 @@ export const getFacultyDetails = async (req,res) =>{
     const faculty = await prisma.faculty.findFirst({
         where:{
             id:id
+        },
+        include:{
+            user:true,
         }
     });
 
@@ -29,9 +32,19 @@ export const getFacultyDetails = async (req,res) =>{
     }
 }
 
+
+
 export const updateDetails = async (req, res) => {
     const id = req.params.id;
-    const { bio, researchAreas, contactInfo, title, userId,phone,location } = req.body;
+    const {
+        bio,
+        researchAreas,
+        contactInfo,
+        title,
+        phone,
+        location,
+        name // this is the user's name
+    } = req.body;
 
     try {
         const updatedFaculty = await prisma.faculty.update({
@@ -41,9 +54,16 @@ export const updateDetails = async (req, res) => {
                 researchAreas,
                 contactInfo,
                 title,
-                userId,
                 phone,
                 location,
+                user: {
+                    update: {
+                        name,
+                    },
+                },
+            },
+            include: {
+                user: true, 
             },
         });
 
@@ -51,5 +71,32 @@ export const updateDetails = async (req, res) => {
     } catch (error) {
         console.error("Error updating faculty details:", error);
         res.status(500).json({ message: "Error updating faculty details" });
+    }
+};
+
+
+
+export const searchFaculty = async (req, res) => {
+    const { name } = req.query;
+
+    try {
+        const faculty = await prisma.faculty.findMany({
+            where: {
+                user: {
+                    name: {
+                        contains: name,
+                        mode: 'insensitive', // makes the search case-insensitive
+                    },
+                },
+            },
+            include: {
+                user: true,
+            },
+        });
+
+        res.status(200).json(faculty);
+    } catch (error) {
+        console.error("Error searching faculty:", error);
+        res.status(500).json({ message: "Error searching faculty" });
     }
 };
