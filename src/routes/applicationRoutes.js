@@ -9,11 +9,12 @@ import {
     getStudentApplications,
     getProjectApplications,
     getApplicationById,
-    submitApplication
+    submitApplication,
+    getAllApplicationsForFaculty
   } from '../controllers/applicationController.js';
 
 // Submit application (Student only)
-router.post('/project/:projectId/apply', verifyJwt, verifyRole([Role.USER]), submitApplication);
+router.post('/project/apply/:projectId', verifyJwt, verifyRole([Role.USER]), submitApplication);
 
 // View application details
 router.get('/:id', verifyJwt, getApplicationById);
@@ -22,7 +23,8 @@ router.get('/:id', verifyJwt, getApplicationById);
 router.get('/student/applications', verifyJwt, verifyRole([Role.USER]), getStudentApplications);
 
 // Faculty application management
-router.get('/project/:projectId/applications', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getProjectApplications);
+router.get('/project/:projectId/', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getProjectApplications);
+router.get('/all/:facultyId/', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getAllApplicationsForFaculty);
 router.put('/:id/status', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), updateApplicationStatus);
 
 // View student profile from application (for faculty review)

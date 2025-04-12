@@ -293,3 +293,35 @@ export const getStudentProfile = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch student profile', error: error.message });
   }
 };
+
+
+export const getAllApplicationsForFaculty = async (req, res) => {
+  const { facultyId } = req.params.facultyId;
+  try {
+    const applications = await prisma.application.findMany({
+      where: {
+        project: {
+          facultyId: facultyId
+        }
+      },
+      include: {
+        project: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profilePicUrl: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+    res.json(applications);
+  }catch (error) {
+    console.error('Error fetching all applications:', error);
+    res.status(500).json({ message: 'Failed to fetch applications', error: error.message });
+  }
+}
