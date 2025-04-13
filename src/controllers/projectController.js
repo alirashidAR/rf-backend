@@ -21,6 +21,34 @@ export const createProject = async (req, res) => {
       return res.status(403).json({ message: 'Faculty ID not found in token' });
     }
 
+    // Convert dates to Date objects
+    const startDateObj = startDate ? new Date(startDate) : null;
+    const endDateObj = endDate ? new Date(endDate) : null;
+    const currentDate = new Date();
+
+    // Validate dates based on project status
+    if (status === 'COMPLETED') {
+      if (!endDateObj || endDateObj > currentDate) {
+        return res.status(400).json({ message: 'For completed projects, end date must be set and not be in the future' });
+      }
+    } else if (status === 'ONGOING') {
+      if (!startDateObj || startDateObj > currentDate) {
+        return res.status(400).json({ message: 'For ongoing projects, start date must be set and be in the past' });
+      }
+      if (!endDateObj || endDateObj <= currentDate) {
+        return res.status(400).json({ message: 'For ongoing projects, end date must be set and be in the future' });
+      }
+    } else if (status === 'PENDING') {
+      if (!startDateObj || startDateObj <= currentDate) {
+        return res.status(400).json({ message: 'For pending projects, start date must be set and be in the future' });
+      }
+    }
+
+    // Validate that start date is before end date
+    if (startDateObj && endDateObj && startDateObj >= endDateObj) {
+      return res.status(400).json({ message: 'Start date must be before end date' });
+    }
+
     const project = await prisma.project.create({
       data: {
         title,
@@ -28,12 +56,12 @@ export const createProject = async (req, res) => {
         keywords,
         type,
         status: status || 'PENDING',
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        applicationDeadline : applicationDeadline ? new Date(applicationDeadline) : null,
-        positionsAvailable :  positionsAvailable || 0,
-        location : location || 'ON_CAMPUS',
-        requirements : requirements || [],
+        startDate: startDateObj,
+        endDate: endDateObj,
+        applicationDeadline: applicationDeadline ? new Date(applicationDeadline) : null,
+        positionsAvailable: positionsAvailable || 0,
+        location: location || 'ON_CAMPUS',
+        requirements: requirements || [],
         facultyId: facultyId
       }
     });
@@ -44,7 +72,6 @@ export const createProject = async (req, res) => {
     res.status(500).json({ message: 'Failed to create project', error: error.message });
   }
 };
-
 // Update an existing project
 export const updateProject = async (req, res) => {
   try {
@@ -307,6 +334,11 @@ export const getProjectById = async (req, res) => {
             participants: true,
             favorited: true
           }
+        },
+        submissions: {
+          orderBy: {
+            dueDate: 'asc'
+          }
         }
       }
     });
@@ -556,3 +588,53 @@ export const getTrendingProjects = async (req, res) => {
   }
 };
 
+// Update project status
+export const updateProjectStatus = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { newStatus } = req.body;
+    
+    // Verify project belongs to the faculty
+    const facultyId = req.user.facultyId;
+    
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    if (project.facultyId !== facultyId) {
+      return res.status(403).json({ message: 'You do not have permission to update this project' });
+    }
+    
+    // Validate the status transition
+    const currentStatus = project.status;
+    
+    // Only allow specific transitions
+    if (
+      (currentStatus === 'PENDING' && newStatus === 'ONGOING') || 
+      (currentStatus === 'ONGOING' && newStatus === 'COMPLETED')
+    ) {
+      const updatedProject = await prisma.project.update({
+        where: { id: projectId },
+        data: {
+          status: newStatus
+        }
+      });
+      
+      return res.json({ 
+        message: `Project status successfully updated from ${currentStatus} to ${newStatus}`, 
+        project: updatedProject 
+      });
+    } else {
+      return res.status(400).json({ 
+        message: `Invalid status transition. Cannot change from ${currentStatus} to ${newStatus}. Valid transitions are: PENDING → ONGOING or ONGOING → COMPLETED` 
+      });
+    }
+  } catch (error) {
+    console.error('Error updating project status:', error);
+    res.status(500).json({ message: 'Failed to update project status', error: error.message });
+  }
+};

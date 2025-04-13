@@ -6,7 +6,8 @@ import statusRoutes from './routes/serverStatus.js';
 import projectRoutes from './routes/projectRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
-import facultyRoutes from './routes/facultyRoutes.js'
+import facultyRoutes from './routes/facultyRoutes.js';
+import submissionRoutes from './routes/submissionRoutes.js';
 
 
 const limiter = rateLimit({
@@ -26,6 +27,7 @@ app.use('/auth', authRoutes);
 app.use('/',statusRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/submissions', submissionRoutes);
 app.use('/api', searchRoutes);
 app.use('/api',facultyRoutes);
 
