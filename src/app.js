@@ -8,6 +8,7 @@ import applicationRoutes from './routes/applicationRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import facultyRoutes from './routes/facultyRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 
 const limiter = rateLimit({
@@ -30,6 +31,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api', searchRoutes);
 app.use('/api',facultyRoutes);
+app.use('/api', userRoutes);
 
 app.listen(5000, () => {
     console.log('Server is running on port 5000');
