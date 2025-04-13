@@ -18,7 +18,8 @@ import {
     getRecentProjects,
     getCurrentProjects,
     getCurrentFacultyProjects,
-    getTrendingProjects
+    getTrendingProjects,
+    updateProjectStatus
   } from '../controllers/projectController.js';
 
 const router = express.Router();
@@ -36,6 +37,7 @@ router.get('/trending', verifyJwt, getTrendingProjects);
 router.post('/create', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), createProject);
 router.put('/:id', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), updateProject);
 router.delete('/:id', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), deleteProject);
+router.patch('/:id/status', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), updateProjectStatus);
 
 // Project listing and search (accessible to all authenticated users)
 router.get('/search', verifyJwt, searchProjects);
