@@ -17,27 +17,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the repository
     - name: Checkout code
       uses: actions/checkout@v2
 
-    
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '20'  
-
+        node-version: '20'
 
     - name: Install dependencies
-      run: |
-        npm install
-        npm run prisma:generate
+      run: npm install
+
+    - name: Generate Prisma Client
+      run: npx prisma generate
 
     - name: Run tests
       run: npm test
 
-
     - name: Upload coverage report
       uses: codecov/codecov-action@v2
       with:
-        file: ./coverage/lcov-report/index.html  # Modify if your coverage is output elsewhere
+        file: ./coverage/lcov-report/index.html  # Adjust if needed
