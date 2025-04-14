@@ -10,6 +10,10 @@ jest.mock("../prisma/prismaClient", () => ({
     findUnique: jest.fn(),
     create: jest.fn(),
   },
+  faculty: {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+  },
 }));
 
 jest.mock("jsonwebtoken");
