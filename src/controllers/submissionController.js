@@ -107,7 +107,7 @@ export const getSubmission = async (req, res) => {
 
     // Check if user is faculty owner
     // The user has a role of FACULTY and their id matches the project's facultyId
-    const isOwner = req.user.role === 'FACULTY' && submission.project.facultyId === req.user.id;
+    const isOwner = req.user.role === 'FACULTY' && submission.project.facultyId === req.user.facultyId;
     
     if (!isOwner) {
       // Check if user is a participant
