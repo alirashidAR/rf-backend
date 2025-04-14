@@ -478,15 +478,36 @@ export const getRecentProjects = async (req, res) => {
   try {
     const recentProjects = await prisma.project.findMany({
       orderBy: { createdAt: "desc" },
-      take: 10 // Fetch latest 10 projects
+      take: 10,
+      include: {
+        faculty: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profilePicUrl: true,
+                department: true
+              }
+            }
+          }
+        }
+      }
     });
 
-    res.json({ projects: recentProjects });
+    res.json({
+      projects: recentProjects.map(project => ({
+        ...project,
+        facultyName: project.faculty?.user?.name || "Unknown"
+      }))
+    });
   } catch (error) {
     console.error("Error fetching recent projects:", error);
     res.status(500).json({ message: "Failed to fetch recent projects" });
   }
 };
+
 
 export const getCurrentProjects = async (req, res) => {
   try {
@@ -578,10 +599,30 @@ export const getTrendingProjects = async (req, res) => {
       take: 10, // Limit to top 10 projects
       include: {
         applications: true // Include applications count
+      },
+      include: {
+        faculty: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profilePicUrl: true,
+                department: true
+              }
+            }
+          }
+        }
       }
     });
 
-    res.json({ projects: trendingProjects });
+    res.json({
+      projects: trendingProjects.map(project => ({
+        ...project,
+        facultyName: project.faculty?.user?.name || "Unknown"
+      }))
+    });
   } catch (error) {
     console.error("Error fetching trending projects:", error);
     res.status(500).json({ message: "Failed to fetch trending projects" });

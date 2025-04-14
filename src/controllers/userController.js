@@ -11,6 +11,48 @@ export const getUser = async (req, res) => {
     res.status(200).json(user);
 }
 
+export const getUserDetails = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const user = await prisma.user.findUnique({
+            where: {
+                id: id,
+            },
+            select: {
+                profilePicUrl: true,
+                bio: true,
+                email: true,
+                researchInterests: true,
+                department: true,
+                projectsParticipated:{
+                    select:{
+                        project:{
+                            select:{
+                                id: true,
+                                title: true,
+                                description: true,
+                                createdAt: true,
+                                updatedAt: true,
+                            }
+                        }
+                    }
+                }
+            },
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        console.error("Error fetching user details:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
 export const editUser = async (req, res) => {
     const user = await prisma.user.update({
         where: {
