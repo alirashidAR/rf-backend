@@ -40,7 +40,7 @@ router.delete('/:id', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), deleteP
 router.patch('/:id/status', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), updateProjectStatus);
 
 // Project listing and search (accessible to all authenticated users)
-router.get('/search', verifyJwt, searchProjects);
+//router.get('/search', verifyJwt, searchProjects);
 router.get('/', verifyJwt, getAllProjects);
 
 // Add/remove project from favorites

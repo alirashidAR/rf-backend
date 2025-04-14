@@ -1,4 +1,5 @@
 import prisma from '../../prisma/prismaClient.js';
+import { ProjectStatus, ProjectType, Location } from '@prisma/client';
 
 // Create a new research project
 export const createProject = async (req, res) => {
@@ -197,6 +198,101 @@ export const removeParticipant = async (req, res) => {
   }
 };
 
+const cleanEnumFilter = (value, validValues) => {
+  if (!value || (Array.isArray(value) && value.length === 0)) return undefined;
+
+  const inputArray = Array.isArray(value) ? value : [value];
+
+  // Filter out empty strings and only keep valid enums
+  const filtered = inputArray
+    .filter((v) => typeof v === 'string' && v.trim() !== '')
+    .filter((v) => validValues.includes(v));
+
+  return filtered.length > 0 ? { in: filtered } : undefined;
+};
+
+// Finish where clause builder
+export const buildProjectWhereClause = ({ status, type, facultyId, query, department, location }) => {
+  const where = {};
+
+  // Generate filters for status, type, location and department
+  const statusFilter = cleanEnumFilter(status, Object.values(ProjectStatus));
+  const typeFilter = cleanEnumFilter(type, Object.values(ProjectType));
+  const locationFilter = cleanEnumFilter(location, Object.values(Location));
+  const departmentFilter = cleanEnumFilter(department, []); // Assuming no enum, otherwise pass valid values
+
+  // Only add filters if they are not undefined or empty
+  if (statusFilter) where.status = statusFilter;
+  if (typeFilter) where.type = typeFilter;
+  if (locationFilter) where.location = locationFilter;
+
+  // If department is specified, apply it as a filter to the faculty
+  if (departmentFilter) {
+    where.faculty = { department: departmentFilter };
+  }
+
+  // If a search query is provided, add it as an OR filter for title, description, or keywords
+  if (query) {
+    where.OR = [
+      { title: { contains: query, mode: 'insensitive' } },
+      { description: { contains: query, mode: 'insensitive' } },
+      { keywords: { has: query } },
+      { faculty: { user: { name: { contains: query, mode: 'insensitive' } } } },
+    ];
+  }
+
+  // Add facultyId filter if it is provided
+  if (facultyId) where.facultyId = facultyId;
+
+  return where;
+};
+
+// Search projects with filters and pagination
+export const searchProjects = async (req, res) => {
+  try {
+    const { query, department, status, type, location, page = 1, pageSize = 5 } = req.body;
+
+    // Build where clause with the provided filters
+    const where = buildProjectWhereClause({ query, department, status, type, location });
+
+    // Set pagination parameters
+    const skip = (page - 1) * pageSize;
+
+    // Fetch projects and total count in parallel
+    const [projects, totalCount] = await Promise.all([
+      prisma.project.findMany({
+        where,
+        include: {
+          faculty: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                  department: true,
+                  profilePicUrl: true,
+                },
+              },
+            },
+          },
+        },
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.project.count({
+        where, // Pass the same where clause to count query
+      })
+    ]);
+
+    // Return the response with projects and total count
+    res.json({ projects, totalCount });
+  } catch (error) {
+    console.error("Error searching projects:", error);
+    res.status(500).json({ message: "Failed to search projects", error: error.message });
+  }
+};
+
 // Get all projects (with optional filters)
 export const getAllProjects = async (req, res) => {
   try {
@@ -233,56 +329,6 @@ export const getAllProjects = async (req, res) => {
   } catch (error) {
     console.error('Error fetching projects:', error);
     res.status(500).json({ message: 'Failed to fetch projects', error: error.message });
-  }
-};
-
-// Search projects
-export const searchProjects = async (req, res) => {
-  try {
-    const { query, department, status, type, page = 1, pageSize = 10 } = req.body;
-
-    if (!query) {
-      return res.status(400).json({ message: 'Keyword (query) is required' });
-    }
-
-    const where = {
-      OR: [
-        { title: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
-        { keywords: { has: query } }
-      ]
-    };
-
-    if (status) where.status = status;
-    if (type) where.type = type;
-    if (department) {
-      where.faculty = {
-        user: {
-          department: { equals: department, mode: 'insensitive' }
-        }
-      };
-    }
-
-    const projects = await prisma.project.findMany({
-      where,
-      include: {
-        faculty: {
-          include: {
-            user: {
-              select: { name: true, email: true, department: true }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: parseInt(pageSize)
-    });
-
-    res.json({ projects, currentPage: parseInt(page), pageSize: parseInt(pageSize) });
-  } catch (error) {
-    console.error('Error searching projects:', error);
-    res.status(500).json({ message: 'Failed to search projects', error: error.message });
   }
 };
 
