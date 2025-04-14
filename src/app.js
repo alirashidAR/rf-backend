@@ -12,7 +12,7 @@ import userRoutes from './routes/userRoutes.js';
 
 
 const limiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
+    windowMs: 5 * 60 * 1000, 
     max: 100, 
     message: 'Too many requests from this IP, please try again later.',
 });
@@ -21,7 +21,7 @@ const app = express();
 
 app.use(limiter)
 app.use(express.json());
-app.use(cors());
+app.use(cors('*'));
 
 
 app.use('/auth', authRoutes);

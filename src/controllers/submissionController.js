@@ -49,7 +49,8 @@ export const getProjectSubmissions = async (req, res) => {
     
     // Validate project exists
     const project = await prisma.project.findUnique({
-      where: { id: projectId }
+      where: { id: projectId },
+      include: { faculty: true }
     });
 
     if (!project) {
@@ -57,21 +58,9 @@ export const getProjectSubmissions = async (req, res) => {
     }
 
     // Check if user is faculty owner or a project participant
-    const isOwner = req.user.faculty && project.facultyId === req.user.facultyId;
     
-    if (!isOwner) {
-      const isParticipant = await prisma.projectParticipants.findUnique({
-        where: {
-          userId_projectId: {
-            userId: req.user.id,
-            projectId
-          }
-        }
-      });
-      
-      if (!isParticipant) {
-        return res.status(403).json({ message: 'You do not have permission to view submissions for this project' });
-      }
+    if (project.facultyId !== req.user.facultyId) {
+      return res.status(403).json({ message: 'You do not have permission to add submissions to this project' });
     }
 
     const submissions = await prisma.submission.findMany({
@@ -116,16 +105,16 @@ export const getSubmission = async (req, res) => {
       return res.status(404).json({ message: 'Submission not found' });
     }
 
-    // Check if user is faculty owner or a project participant
-    const isOwner = req.user.faculty && submission.project.facultyId === req.user.facultyId;
+    // Check if user is faculty owner
+    // The user has a role of FACULTY and their id matches the project's facultyId
+    const isOwner = req.user.role === 'FACULTY' && submission.project.facultyId === req.user.facultyId;
     
     if (!isOwner) {
-      const isParticipant = await prisma.projectParticipants.findUnique({
+      // Check if user is a participant
+      const isParticipant = await prisma.projectParticipants.findFirst({
         where: {
-          userId_projectId: {
-            userId: req.user.id,
-            projectId: submission.projectId
-          }
+          userId: req.user.id,
+          projectId: submission.projectId
         }
       });
       
@@ -140,6 +129,7 @@ export const getSubmission = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch submission', error: error.message });
   }
 };
+
 
 /**
  * Update a submission
@@ -198,7 +188,7 @@ export const deleteSubmission = async (req, res) => {
     }
 
     // Check if the faculty making the request owns the project
-    if (submission.project.facultyId !== req.user.faculty.id) {
+    if (submission.project.facultyId !== req.user.facultyId) {
       return res.status(403).json({ message: 'You do not have permission to delete this submission' });
     }
 
@@ -314,7 +304,7 @@ export const provideFeedback = async (req, res) => {
     }
 
     // Check if the faculty making the request owns the project
-    if (submissionItem.submission.project.facultyId !== req.user.faculty.id) {
+    if (submissionItem.submission.project.facultyId !== req.user.facultyId) {
       return res.status(403).json({ message: 'You do not have permission to provide feedback for this submission' });
     }
 
