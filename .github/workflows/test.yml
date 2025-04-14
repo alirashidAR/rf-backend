@@ -3,12 +3,12 @@ name: Run Tests
 on:
   push:
     branches:
-      - main
+      - master
       - 'feature/*'
       - 'develop'
   pull_request:
     branches:
-      - main
+      - master
       - 'feature/*'
       - 'develop'
 
@@ -21,23 +21,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    # Set up Node.js environment
+    
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16'  # Specify your Node.js version
+        node-version: '20'  
 
-    # Install dependencies
+
     - name: Install dependencies
       run: |
         npm install
         npm run prisma:generate
 
-    # Run tests with Jest
     - name: Run tests
       run: npm test
 
-    # Upload Jest coverage (optional)
+
     - name: Upload coverage report
       uses: codecov/codecov-action@v2
       with:
