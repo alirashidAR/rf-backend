@@ -57,10 +57,22 @@ export const getProjectSubmissions = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Check if user is faculty owner or a project participant
+    // Check if user is faculty owner
+    // The user has a role of FACULTY and their id matches the project's facultyId
+    const isOwner = req.user.role === 'FACULTY' && project.facultyId === req.user.facultyId;
     
-    if (project.facultyId !== req.user.facultyId) {
-      return res.status(403).json({ message: 'You do not have permission to add submissions to this project' });
+    if (!isOwner) {
+      // Check if user is a participant
+      const isParticipant = await prisma.projectParticipants.findFirst({
+        where: {
+          userId: req.user.id,
+          projectId: projectId
+        }
+      });
+      
+      if (!isParticipant) {
+        return res.status(403).json({ message: 'You do not have permission to view this submission' });
+      }
     }
 
     const submissions = await prisma.submission.findMany({
