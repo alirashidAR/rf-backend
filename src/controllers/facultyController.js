@@ -22,6 +22,8 @@ export const getFacultyDetails = async (req,res) =>{
         },
         include:{
             user:true,
+            projects:true,
+            publications:true,
         }
     });
 
