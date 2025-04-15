@@ -618,15 +618,16 @@ export const getCurrentProjects = async (req, res) => {
         status: { in: ["PENDING", "ACCEPTED", "REJECTED"] } // Show only active applications
       },
       select: {
+        id: true,
+        status: true,
         project: {
           select: {
-            id,
-            title,
-            updatedAt,
-            status
+            id: true,
+            title: true,
+            updatedAt: true,
+            status: true
           }
-        },
-        status
+        }
       }
     });
 
@@ -641,7 +642,17 @@ export const getCurrentProjects = async (req, res) => {
       return true;
     });
 
-    res.json({ projects: filteredProjects });
+    // Flatten the structure for easier frontend consumption
+    const formattedProjects = filteredProjects.map(app => ({
+      id: app.id,
+      projectId: app.project.id,
+      title: app.project.title,
+      updatedAt: app.project.updatedAt,
+      applicationStatus: app.status,
+      projectStatus: app.project.status
+    }));
+
+    res.json({ projects: formattedProjects });
   } catch (error) {
     console.error("Error fetching current projects:", error);
     res.status(500).json({ message: "Failed to fetch current projects" });
