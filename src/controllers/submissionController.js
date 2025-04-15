@@ -323,8 +323,7 @@ export const provideFeedback = async (req, res) => {
     const updatedSubmissionItem = await prisma.submissionItem.update({
       where: { id: submissionItemId },
       data: {
-        feedback,
-        status: 'GRADED'
+        feedback
       }
     });
 
