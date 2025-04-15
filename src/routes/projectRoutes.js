@@ -20,12 +20,16 @@ import {
     getCurrentProjects,
     getCurrentFacultyProjects,
     getTrendingProjects,
-    updateProjectStatus
+    updateProjectStatus,
+    getDeadlines,
   } from '../controllers/projectController.js';
 
 const router = express.Router();
 
 
+
+// Get deadlines
+router.get('/deadlines', verifyJwt, getDeadlines);
 
 // Faculty dashboard view of projects
 router.get('/faculty/current', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getCurrentFacultyProjects);
@@ -55,6 +59,5 @@ router.delete('/:projectId/participants/:studentId', verifyJwt, verifyRole([Role
 
 // avoid conflicts
 router.get('/:id', verifyJwt, getProjectById);
-
 
 export default router;

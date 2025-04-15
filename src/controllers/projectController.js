@@ -793,3 +793,31 @@ export const updateProjectStatus = async (req, res) => {
     res.status(500).json({ message: 'Failed to update project status', error: error.message });
   }
 };
+
+
+export const getDeadlines = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const deadlines = await prisma.application.findMany({
+      where: {
+        userId,
+        status: "PENDING"
+      },
+      select: {
+        id: true,
+        project: {
+          select: {
+            title: true,
+            applicationDeadline: true
+          }
+        }
+      }
+    });
+    
+    res.json(deadlines);
+  } catch (error) {
+    console.error('Error fetching deadlines:', error);
+    res.status(500).json({ message: 'Failed to fetch deadlines', error: error.message });
+  }
+}
