@@ -25,6 +25,8 @@ model User {
   projectsParticipated ProjectParticipants[]
   submissionItems      SubmissionItem[]
   favorites            Project[]             @relation("UserFavorites")
+  phone                String?
+  location             String?
 }
 
 model Faculty {

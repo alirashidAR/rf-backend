@@ -20,11 +20,14 @@ export const getUserDetails = async (req, res) => {
                 id: id,
             },
             select: {
+                name: true,
                 profilePicUrl: true,
                 bio: true,
                 email: true,
                 researchInterests: true,
                 department: true,
+                location: true,
+                phone: true,
                 projectsParticipated:{
                     select:{
                         project:{
@@ -45,12 +48,30 @@ export const getUserDetails = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json(user);
+        res.status(200).json({ user, contactInfo: user.email, bio: user.bio, researchAreas: user.researchInterests,phone:user.phone, location:user.location });
     } catch (error) {
         console.error("Error fetching user details:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const updateUser = async (req, res) => {
+    const {name, contactInfo, bio, researchAreas} = req.body;
+    console.log(req.body);
+
+    const user = await prisma.user.update({
+        where: {
+            id: req.user.id,
+        },
+        data: {
+            name,
+            email: contactInfo,
+            bio,
+            researchInterests:researchAreas,
+        },
+    });
+    res.status(200).json(user);
+}
 
 
 export const editUser = async (req, res) => {
@@ -86,40 +107,3 @@ export const fillUserDetails = async (req, res) => {
     res.status(200).json("User details updated successfully");
 }
 
-export const fillFacultyDetails = async (req, res) => {
-    // we use forms to fill user details, so get them
-    const bio =  FormData.get('bio');
-    const facultyId = FormData.get('facultyId');
-    const facultyPublications = FormData.get('facultyPublications');
-    const publications = JSON.parse(FormData.get('publications'));
-    const department = FormData.get('department');
-    const userId = req.user.id;
-    
-    for (const publication of publications) {
-        await prisma.publication.create({
-            data: {
-                title: publication.title,
-                authors: publication.authors,
-                journal: publication.journal,
-                conference: publication.conference,
-                year: publication.year,
-                url: publication.url,
-                facultyId: publication.facultyId,
-            },
-        });
-    }
-
-    await prisma.user.update({
-        where:{
-            id: userId,
-        },
-        data:{
-            bio: bio,
-            facultyId: facultyId,
-            facultyPublications: facultyPublications,
-            department: department,
-        },
-    })
-
-    res.status(200).json("User details updated successfully");
-}
