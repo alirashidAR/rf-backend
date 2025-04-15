@@ -427,6 +427,46 @@ export const getProjectById = async (req, res) => {
   }
 };
 
+// Get user's projects
+export const getUserProjects = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    if (!userId) {
+      return res.status(403).json({ message: 'User ID not found in token' });
+    }
+    
+    const projects = await prisma.project.findMany({
+      where: {
+        participants: {
+          some: {
+            userId: userId
+          }
+        }
+      },
+      include: {
+        faculty: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                department: true,
+                profilePicUrl: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    res.json(projects);
+  } catch (error) {
+    console.error('Error fetching user projects:', error);
+    res.status(500).json({ message: 'Failed to fetch user projects', error: error.message });
+  }
+};
+
 // Get faculty's projects for dashboard
 export const getFacultyProjects = async (req, res) => {
   try {

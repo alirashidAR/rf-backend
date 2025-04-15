@@ -10,7 +10,8 @@ import {
     getAllProjects, 
     searchProjects, 
     getProjectById, 
-    getFacultyProjects, 
+    getFacultyProjects,
+    getUserProjects, 
     addToFavorites, 
     removeFromFavorites, 
     getProjectParticipants,
@@ -29,6 +30,7 @@ const router = express.Router();
 // Faculty dashboard view of projects
 router.get('/faculty/current', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getCurrentFacultyProjects);
 router.get('/faculty', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), getFacultyProjects);
+router.get('/user', verifyJwt, verifyRole([Role.USER, Role.ADMIN]), getUserProjects);
 router.get('/current', verifyJwt, verifyRole([Role.USER, Role.ADMIN]), getCurrentProjects);
 router.get('/recent', verifyJwt, getRecentProjects);
 router.get('/trending', verifyJwt, getTrendingProjects);
