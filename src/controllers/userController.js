@@ -56,7 +56,7 @@ export const getUserDetails = async (req, res) => {
 };
 
 export const updateUser = async (req, res) => {
-    const {name, contactInfo, bio, researchAreas} = req.body;
+    const {name, contactInfo, bio, researchAreas,location,phone} = req.body;
     console.log(req.body);
 
     const user = await prisma.user.update({
@@ -64,6 +64,8 @@ export const updateUser = async (req, res) => {
             id: req.user.id,
         },
         data: {
+            location:location,
+            phone:phone,
             name,
             email: contactInfo,
             bio,
