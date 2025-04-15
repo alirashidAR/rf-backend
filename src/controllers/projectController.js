@@ -128,18 +128,25 @@ export const deleteProject = async (req, res) => {
     const facultyId = req.user.facultyId;
     
     const project = await prisma.project.findUnique({
-      where: { id: projectId }
+      where: { id: projectId },
+      include: { applications: true } // Fetch associated applications if necessary
     });
     
     if (!project || project.facultyId !== facultyId) {
       return res.status(403).json({ message: 'You do not have permission to delete this project' });
     }
     
+    // Delete associated applications first
+    await prisma.application.deleteMany({
+      where: { projectId: projectId }
+    });
+    
+    // Delete the project
     await prisma.project.delete({
       where: { id: projectId }
     });
     
-    res.json({ message: 'Project deleted successfully' });
+    res.json({ message: 'Project and associated applications deleted successfully' });
   } catch (error) {
     console.error('Error deleting project:', error);
     res.status(500).json({ message: 'Failed to delete project', error: error.message });
