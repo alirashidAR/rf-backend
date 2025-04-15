@@ -96,9 +96,9 @@ model Application {
   userId      String
   projectId   String
   status      ApplicationStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
   coverLetter String?
   resumeUrl   String?
-  createdAt   DateTime          @default(now())
   project     Project           @relation(fields: [projectId], references: [id])
   user        User              @relation(fields: [userId], references: [id])
 }
