@@ -10,11 +10,12 @@ import {
     getProjectApplications,
     getApplicationById,
     submitApplication,
-    getAllApplicationsForFaculty
+    getAllApplicationsForFaculty,
+    upload
   } from '../controllers/applicationController.js';
 
 // Submit application (Student only)
-router.post('/project/apply/:projectId', verifyJwt, verifyRole([Role.USER]), submitApplication);
+router.post('/project/apply/:projectId', verifyJwt, verifyRole([Role.USER]), upload.single('resumeFile'), submitApplication);
 
 // View application details
 router.get('/:id', verifyJwt, getApplicationById);

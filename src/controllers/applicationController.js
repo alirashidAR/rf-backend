@@ -1,9 +1,29 @@
 import prisma from '../../prisma/prismaClient.js';
+import { uploadFile } from '../config/cloudinary.js';
+import multer from 'multer';
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+export const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept only PDF and DOC files
+    if (file.mimetype === 'application/pdf' || 
+        file.mimetype === 'application/msword' || 
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF and DOC files are allowed'), false);
+    }
+  }
+});
 
 // Submit a new application
 export const submitApplication = async (req, res) => {
   try {
     const { projectId } = req.params;
+    const { coverLetter } = req.body;
     const userId = req.user.id;
     
     // Check if project exists
@@ -26,12 +46,26 @@ export const submitApplication = async (req, res) => {
     if (existingApplication) {
       return res.status(400).json({ message: 'You have already applied to this project' });
     }
+
+    // Handle file upload if there's a file
+    let resumeUrl = null;
+    if (req.file) {
+      try {
+        // Upload file to Cloudinary
+        resumeUrl = await uploadFile(req.file, 'application_documents');
+      } catch (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        return res.status(500).json({ message: 'Failed to upload document', error: uploadError.message });
+      }
+    }
     
     // Create application
     const application = await prisma.application.create({
       data: {
         projectId,
-        userId
+        userId,
+        coverLetter: coverLetter || null,
+        resumeUrl: resumeUrl || null
       }
     });
     
