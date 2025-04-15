@@ -1,3 +1,5 @@
+//cloudinary.js
+
 import { v2 as cloudinary } from 'cloudinary';
 import streamifier from 'streamifier';
 import dotenv from 'dotenv';

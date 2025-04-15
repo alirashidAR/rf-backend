@@ -150,6 +150,13 @@ export const deleteProject = async (req, res) => {
 export const removeParticipant = async (req, res) => {
   try {
     const { projectId, studentId } = req.params;
+    
+    // Validate that projectId and studentId are provided
+    if (!projectId || !studentId) {
+      return res.status(400).json({ 
+        message: "Project ID and Student ID are required" 
+      });
+    }
 
     // Verify the faculty making the request
     const facultyId = req.user.facultyId;
@@ -163,17 +170,21 @@ export const removeParticipant = async (req, res) => {
       where: { id: projectId }
     });
 
-    if (!project || project.facultyId !== facultyId) {
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    
+    if (project.facultyId !== facultyId) {
       return res.status(403).json({ message: "You do not have permission to modify this project" });
     }
 
     // Check if the student is actually a participant
-    const participant = await prisma.projectParticipants.findUnique({
+    const participant = await prisma.projectParticipants.findFirst({
       where: {
-        projectId_userId: {
-          projectId,
-          userId: studentId
-        }
+        AND: [
+          { projectId: projectId },
+          { userId: studentId }
+        ]
       }
     });
 
@@ -182,12 +193,12 @@ export const removeParticipant = async (req, res) => {
     }
 
     // Remove the student from the project
-    await prisma.projectParticipants.delete({
+    await prisma.projectParticipants.deleteMany({
       where: {
-        projectId_userId: {
-          projectId,
-          userId: studentId
-        }
+        AND: [
+          { projectId: projectId },
+          { userId: studentId }
+        ]
       }
     });
 
@@ -197,6 +208,7 @@ export const removeParticipant = async (req, res) => {
     res.status(500).json({ message: "Failed to remove student", error: error.message });
   }
 };
+
 
 const cleanEnumFilter = (value, validValues) => {
   if (!value || (Array.isArray(value) && value.length === 0)) return undefined;
@@ -412,6 +424,46 @@ export const getProjectById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching project:', error);
     res.status(500).json({ message: 'Failed to fetch project', error: error.message });
+  }
+};
+
+// Get user's projects
+export const getUserProjects = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    if (!userId) {
+      return res.status(403).json({ message: 'User ID not found in token' });
+    }
+    
+    const projects = await prisma.project.findMany({
+      where: {
+        participants: {
+          some: {
+            userId: userId
+          }
+        }
+      },
+      include: {
+        faculty: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                department: true,
+                profilePicUrl: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    res.json(projects);
+  } catch (error) {
+    console.error('Error fetching user projects:', error);
+    res.status(500).json({ message: 'Failed to fetch user projects', error: error.message });
   }
 };
 
