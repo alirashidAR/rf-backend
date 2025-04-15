@@ -714,9 +714,7 @@ export const getTrendingProjects = async (req, res) => {
       },
       take: 10, // Limit to top 10 projects
       include: {
-        applications: true // Include applications count
-      },
-      include: {
+        applications:true,
         faculty: {
           include: {
             user: {
