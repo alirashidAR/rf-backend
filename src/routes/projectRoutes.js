@@ -49,7 +49,7 @@ router.delete('/:id/favorite', verifyJwt, removeFromFavorites);
 
 // Get project participants
 router.get('/:id/participants', verifyJwt, getProjectParticipants);
-router.delete('/:id/participants/:userId', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), removeParticipant);
+router.delete('/:projectId/participants/:studentId', verifyJwt, verifyRole([Role.FACULTY, Role.ADMIN]), removeParticipant);
 
 // avoid conflicts
 router.get('/:id', verifyJwt, getProjectById);

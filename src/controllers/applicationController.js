@@ -203,14 +203,20 @@ export const updateApplicationStatus = async (req, res) => {
       return res.status(403).json({ message: 'You do not have permission to update this application' });
     }
     
-    // Update application status
-    const updatedApplication = await prisma.application.update({
-      where: { id: applicationId },
-      data: { status }
-    });
-    
-    // If accepted, add student to project participants
-    if (status === 'ACCEPTED') {
+    // Check if status is being changed to ACCEPTED
+    if (status === 'ACCEPTED' && application.status !== 'ACCEPTED') {
+      // Check if positions are still available
+      if (application.project.positionsAvailable <= 0) {
+        return res.status(400).json({ message: 'No positions available for this project' });
+      }
+      
+      // Reduce available positions by 1
+      await prisma.project.update({
+        where: { id: application.projectId },
+        data: { positionsAvailable: { decrement: 1 } }
+      });
+      
+      // Add student to project participants
       await prisma.projectParticipants.create({
         data: {
           userId: application.userId,
@@ -219,7 +225,36 @@ export const updateApplicationStatus = async (req, res) => {
       });
     }
     
-    res.json({ message: `Application ${status.toLowerCase()} successfully`, application: updatedApplication });
+    // If changing from ACCEPTED to another status, increment the positions back
+    if (application.status === 'ACCEPTED' && status !== 'ACCEPTED') {
+      // Increase available positions by 1
+      await prisma.project.update({
+        where: { id: application.projectId },
+        data: { positionsAvailable: { increment: 1 } }
+      });
+      
+      // Remove student from project participants
+      await prisma.projectParticipants.deleteMany({
+        where: {
+          userId: application.userId,
+          projectId: application.projectId
+        }
+      });
+    }
+    
+    // Update application status
+    const updatedApplication = await prisma.application.update({
+      where: { id: applicationId },
+      data: { status }
+    });
+    
+    res.json({ 
+      message: `Application ${status.toLowerCase()} successfully`, 
+      application: updatedApplication,
+      projectPositionsRemaining: status === 'ACCEPTED' ? 
+        application.project.positionsAvailable - 1 : 
+        (application.status === 'ACCEPTED' ? application.project.positionsAvailable + 1 : application.project.positionsAvailable)
+    });
   } catch (error) {
     console.error('Error updating application status:', error);
     res.status(500).json({ message: 'Failed to update application status', error: error.message });
