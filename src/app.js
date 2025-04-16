@@ -9,6 +9,7 @@ import searchRoutes from './routes/searchRoutes.js';
 import facultyRoutes from './routes/facultyRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import metricRoutes from './routes/metricRoutes.js';
 
 
 const limiter = rateLimit({
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use(cors('*'));
 
 
+app.use('/api', metricRoutes);
 app.use('/auth', authRoutes);
 app.use('/',statusRoutes);
 app.use('/api/projects', projectRoutes);
