@@ -9,6 +9,6 @@ const router = express.Router();
 router.post('/faculty',verifyJWT, verifyRole([Role.FACULTY, Role.ADMIN]), CreateFaculty);
 router.patch('/faculty/:id',verifyJWT, verifyRole([Role.FACULTY, Role.ADMIN]), updateDetails);
 router.get('/faculty/search',verifyJWT, verifyRole([Role.FACULTY, Role.ADMIN,Role.USER]), searchFaculty);
-router.get('/faculty/:id',verifyJWT, verifyRole([Role.FACULTY, Role.ADMIN]), getFacultyDetails);
+router.get('/faculty/:id',verifyJWT, verifyRole([Role.FACULTY, Role.ADMIN,Role.USER]), getFacultyDetails);
 
 export default router;
