@@ -24,7 +24,7 @@ app.use(limiter)
 app.use(express.json());
 app.use(cors('*'));
 
-
+//metrics route
 app.use('/api', metricRoutes);
 app.use('/auth', authRoutes);
 app.use('/',statusRoutes);
