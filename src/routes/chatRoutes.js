@@ -10,6 +10,7 @@ import {
   getUnreadMessageCounts
 } from '../controllers/chatController.js';
 import { verifyChatAccess } from '../middlewares/chatAuth.js';
+import verifyJwt from '../middlewares/verifyJwt.js';
 
 const router = express.Router();
 
@@ -57,7 +58,7 @@ router.post(
 // Get unread message counts for all chats the user is part of
 router.get(
   '/chat/unread',
-  verifyChatAccess,
+  verifyJwt,
   getUnreadMessageCounts
 );
 

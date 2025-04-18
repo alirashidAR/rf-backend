@@ -137,29 +137,58 @@ export const deleteProject = async (req, res) => {
     
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: { applications: true } // Fetch associated applications if necessary
+      include: { 
+        applications: true,
+        submissions: {
+          include: { submissionItems: true }
+        }
+      }
     });
     
     if (!project || project.facultyId !== facultyId) {
       return res.status(403).json({ message: 'You do not have permission to delete this project' });
     }
     
-    // Delete associated applications first
+    // Delete associated applications
     await prisma.application.deleteMany({
       where: { projectId: projectId }
     });
+    
+    // Delete associated submission items first
+    for (const submission of project.submissions) {
+      await prisma.submissionItem.deleteMany({
+        where: { submissionId: submission.id }
+      });
+    }
+    
+    // Delete associated submissions
+    await prisma.submission.deleteMany({
+      where: { projectId: projectId }
+    });
+    
+    // Delete project participants
+    await prisma.projectParticipants.deleteMany({
+      where: { projectId: projectId }
+    });
+    
+    // Delete the chat room associated with the project in MongoDB
+    const { ChatRoom } = await import('../models/chatSchema.js');
+    await ChatRoom.deleteOne({ projectId: projectId });
     
     // Delete the project
     await prisma.project.delete({
       where: { id: projectId }
     });
     
-    res.json({ message: 'Project and associated applications deleted successfully' });
+    res.json({ 
+      message: 'Project and all associated data (applications, submissions, submission items, participants, and chat room) deleted successfully' 
+    });
   } catch (error) {
     console.error('Error deleting project:', error);
     res.status(500).json({ message: 'Failed to delete project', error: error.message });
   }
 };
+
 
 //Reove a student from the project
 export const removeParticipant = async (projectId, studentId) => {
