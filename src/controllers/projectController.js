@@ -1,5 +1,11 @@
+// controllers/projectController.js
 import prisma from '../../prisma/prismaClient.js';
 import { ProjectStatus, ProjectType, Location } from '@prisma/client';
+
+import { 
+  initializeChatRoom,  
+  removeParticipantFromChatRoom 
+} from './chatController.js';
 
 // Create a new research project
 export const createProject = async (req, res) => {
@@ -66,6 +72,8 @@ export const createProject = async (req, res) => {
         facultyId: facultyId
       }
     });
+
+    await initializeChatRoom(project.id, req.user.id);
 
     res.status(201).json({ message: 'Project created successfully', project });
   } catch (error) {
@@ -154,10 +162,8 @@ export const deleteProject = async (req, res) => {
 };
 
 //Reove a student from the project
-export const removeParticipant = async (req, res) => {
+export const removeParticipant = async (projectId, studentId) => {
   try {
-    const { projectId, studentId } = req.params;
-    
     // Validate that projectId and studentId are provided
     if (!projectId || !studentId) {
       return res.status(400).json({ 
@@ -208,6 +214,8 @@ export const removeParticipant = async (req, res) => {
         ]
       }
     });
+
+    await removeParticipantFromChatRoom(projectId, studentId);
 
     res.json({ message: "Student removed from the project successfully" });
   } catch (error) {
